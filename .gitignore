@@ -1,0 +1,7 @@
+# Never commit secrets
+*.key
+anthropic.key
+openai.key
+*.env
+settings.json5
+launcher_profiles.json
