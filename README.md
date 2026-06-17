@@ -1,53 +1,60 @@
-# Minecraft AI Player Setup & Tooling
+# minecraft-stuff
 
-Setup notes, world-backup tooling, and a detailed bug report compiled while trying to
-get an AI companion ("NPC you can give instructions to") working in **Minecraft Java**.
+A grab-bag of **Minecraft Java** tooling and notes — world backups, a mining reference, and
+AI-companion setup/troubleshooting. Started life as an AI-companion experiment and grew into a
+general home for the scripts and docs collected along the way.
 
-Two parallel setups were used, kept in separate game directories so their mods never mix:
+Two setups are referenced throughout, kept in separate game directories so their mods never mix:
 
 | Profile | Version | Game dir | Purpose |
 |---|---|---|---|
 | **Maps + Waypoints** | 26.1.2 | `.minecraft` | Main world — Xaero's Minimap + World Map, coords, waypoints |
-| **AI Player** | 1.21.1 | `.minecraft-ai` | AI companion experiments (+ the same Xaero maps) |
+| **AI companion** | 1.21.1 | `.minecraft-ai` | AI NPC experiments (+ the same Xaero maps) |
 
 ## What's here
 
-### `docs/`
-- **[AI-Player-Bug-Report.md](docs/AI-Player-Bug-Report.md)** — a thorough, reproducible
-  write-up of why the **AI-Player** mod (`1.0.5.3+1.21.1`) cannot execute commands across
-  *any* provider (Claude / OpenAI / custom / Ollama). Six distinct, logged failures, with
-  root causes traced to decompiled classes. The headline blocker (Issue 5): the
-  action/tool-calling layer (`FunctionCallerV2`) is hard-wired to Ollama, so cloud models
-  can chat but never act.
+### `backups/` — world backup & restore (Windows / PowerShell)
+Dual-world backup/restore covering both installs (main = 26.1.2, ai = 1.21.1).
+- **`backup-world.ps1`** — timestamped `.zip` restore points; safe to run while playing
+  (skips `session.lock`, robocopy staging, keeps the last 40). Only does work when Minecraft
+  is running *or* a world changed since its last backup, so idle ticks create nothing and the
+  final save written on quit is still captured. Driven by a 15-minute Scheduled Task.
+- **`restore-world.ps1`** — interactive restore: pick a world set + restore point; snapshots
+  the current state first as a safety net. **Close Minecraft before restoring.**
+- **`*.bat`** — double-click launchers for the two scripts.
+
+### `docs/` — references & write-ups
 - **[Minecraft-Ore-Levels-26.1.2.md](docs/Minecraft-Ore-Levels-26.1.2.md)** — best Y-levels
   for every ore (diamond Y -59, iron Y 16 / mountain peaks, ancient debris Y 15, …). Ore
   generation is unchanged since 1.18, so the chart holds through 26.1.x.
+- **[AI-Player-Bug-Report.md](docs/AI-Player-Bug-Report.md)** — a thorough, reproducible
+  write-up of why the **AI-Player** mod (`1.0.5.3+1.21.1`) cannot execute commands across
+  *any* provider (Claude / OpenAI / custom / Ollama). Six distinct, logged failures, with
+  root causes traced to decompiled classes. Headline blocker (Issue 5): the action/tool-calling
+  layer (`FunctionCallerV2`) is hard-wired to Ollama, so cloud models can chat but never act.
 
-### `backups/`
-Dual-world backup/restore for both installs (main = 26.1.2, ai = 1.21.1).
-- **`backup-world.ps1`** — timestamped `.zip` restore points; safe to run while playing
-  (skips `session.lock`, robocopy staging, only backs up on change, keeps the last 40).
-  Driven by a 15-minute Scheduled Task.
-- **`restore-world.ps1`** — interactive restore: pick a world set + restore point; snapshots
-  the current state first as a safety net.
-- **`*.bat`** — double-click launchers for the two scripts.
+### `bridge/` — experimental
+- **`claude_bridge.py`** — a local OpenAI-compatible shim (port 8788) that tried to work around
+  AI-Player's broken Anthropic path. Forwards chat to Anthropic, routes embeddings to local
+  Ollama. **Unused in the end** (the mod's action layer is the real blocker). Reads its key from
+  `anthropic.key` beside it; that file is **not** committed.
 
-### `bridge/`
-- **`claude_bridge.py`** — a local OpenAI-compatible shim (port 8788) that was an attempt to
-  work around AI-Player's broken Anthropic path. Forwards chat to Anthropic and routes
-  embeddings to local Ollama. **Unused in the end** (the mod's action layer is the real
-  blocker — see the bug report). Reads its key from `anthropic.key` beside it; that file is
-  **not** committed.
+## AI companion: what works
 
-## Outcome
+- ❌ **AI-Player** is broken on 1.21.1 (see the bug report).
+- ✅ **[Player2 AI NPC](https://modrinth.com/mod/player2npc)** (PlayerEngine framework) works:
+  press `H` in-game, pick a companion, talk in natural language. Needs the free Player2 desktop
+  app running as the local AI gateway.
+  - **Gotcha:** with **call-by-name chat** enabled, a companion only responds when your message
+    *starts with its name* (e.g. `Ellie hello`, `Ellie follow me`). Plain messages are routed to
+    nobody and silently dropped. Either prefix the name or turn off call-by-name in the mod config.
 
-- ✅ Maps, coordinates, and waypoints (Xaero's) on both versions.
-- ✅ Automatic + manual dual-world backups.
-- ✅ Ore reference.
-- ❌ **AI-Player** is broken on 1.21.1 (see bug report).
-- 👉 Switched to **[Player2 AI NPC](https://modrinth.com/mod/player2npc)** (PlayerEngine
-  framework) as the working alternative — press `H` in-game, pick a companion, talk in
-  natural language. Needs the free Player2 desktop app running as the AI gateway.
+## Maps & coordinates
+
+[Xaero's Minimap + World Map](https://modrinth.com/mod/xaeros-minimap) on both versions give you
+the minimap, X/Y/Z coordinates, and waypoints. Note: the map only marks **real players** and
+**waypoints** — an AI companion is a custom NPC entity, so it won't show as a player marker. Use
+the minimap's creature radar for a live dot, or drop a waypoint.
 
 ## Security note
 
