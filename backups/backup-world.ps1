@@ -2,10 +2,19 @@
 #   main = your 26.1.2 worlds (.minecraft\saves)
 #   ai   = your 1.21.1 AI-Player worlds (.minecraft-ai\saves)
 # Safe to run while playing: skips the locked session.lock and only backs up when something changed.
+#
+# Idle behavior: the task fires every 15 min, but it only does real work when Minecraft is
+# RUNNING (an active session) OR a world changed since its last backup. The "changed" case is
+# what captures the final save written when you quit, so your last session is never lost. When
+# Minecraft is closed and nothing has changed, this exits immediately and creates nothing.
 $ErrorActionPreference = 'Stop'
 
 $backupRoot = Join-Path $env:APPDATA '.minecraft\backups'
 $keep = 40   # restore points to keep per world before pruning the oldest
+
+# Is Minecraft actually running right now? (its bundled Java runtime, or any java pointed at .minecraft)
+$mcRunning = [bool](Get-Process javaw, java -ErrorAction SilentlyContinue |
+    Where-Object { $_.Path -match 'minecraft|java-runtime' })
 
 $sources = @(
     @{ Name = 'main (26.1.2)'; Saves = Join-Path $env:APPDATA '.minecraft\saves';    Dest = Join-Path $backupRoot 'main' },
@@ -27,7 +36,8 @@ foreach ($s in $sources) {
     $lastBackup = Get-ChildItem -Path $s.Dest -Filter 'world_*.zip' -ErrorAction SilentlyContinue |
         Sort-Object LastWriteTime -Descending | Select-Object -First 1
     if ($lastBackup -and $latestChange -and $lastBackup.LastWriteTime -ge $latestChange) {
-        Write-Host "[$($s.Name)] no changes since $($lastBackup.Name) - skipping."
+        $state = if ($mcRunning) { 'playing, but no new changes' } else { 'Minecraft closed and idle' }
+        Write-Host "[$($s.Name)] $state since $($lastBackup.Name) - skipping."
         continue
     }
 
