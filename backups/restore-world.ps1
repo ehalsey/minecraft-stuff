@@ -25,14 +25,25 @@ if (-not $backups) { Write-Host "No restore points found for $($set.Name)."; Rea
 Write-Host ''
 Write-Host "Restore points for $($set.Name) (newest first):" -ForegroundColor Cyan
 for ($i = 0; $i -lt $backups.Count; $i++) {
-    '{0,3}: {1}   ({2})' -f ($i + 1), $backups[$i].Name, $backups[$i].LastWriteTime
+    $b = $backups[$i]
+    $id = if ($b.Name -match '^world_(\d+)_') { '#{0}' -f [int]$Matches[1] } else { '—' }
+    '{0,3}  {1,-7}  {2}   ({3})' -f ($i + 1), $id, $b.Name, $b.LastWriteTime
 }
 Write-Host ''
-$choice = Read-Host 'Enter the number to restore (or Enter to cancel)'
+Write-Host 'Type the #ID (preferred, stable) or the row number on the left.' -ForegroundColor DarkGray
+$choice = Read-Host 'Enter restore point (or Enter to cancel)'
 if (-not $choice) { Write-Host 'Cancelled.'; exit }
-$idx = [int]$choice - 1
-if ($idx -lt 0 -or $idx -ge $backups.Count) { Write-Host 'Invalid choice.'; Read-Host 'Press Enter'; exit }
-$pick = $backups[$idx]
+$choice = $choice.Trim().TrimStart('#').Trim()
+
+# Prefer a stable-ID match; fall back to the row number for legacy points without an ID.
+$pick = $null
+$num  = 0
+if ([int]::TryParse($choice, [ref]$num)) {
+    $pick = $backups | Where-Object { $_.Name -match '^world_(\d+)_' -and [int]$Matches[1] -eq $num } |
+        Select-Object -First 1
+    if (-not $pick -and $num -ge 1 -and $num -le $backups.Count) { $pick = $backups[$num - 1] }
+}
+if (-not $pick) { Write-Host 'Invalid choice.'; Read-Host 'Press Enter'; exit }
 
 Write-Host ''
 Write-Host "WARNING: this REPLACES the current $($set.Name) worlds with:" -ForegroundColor Yellow
