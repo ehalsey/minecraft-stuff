@@ -44,10 +44,13 @@ if (-not $Mode) {
 }
 
 # --- pick shared location if not passed ----------------------------------------
+# Default to the location setup.ps1 remembered (sync-location.txt), else OneDrive.
 if (-not $Location) {
-    $suggest = $env:OneDrive
+    $suggest = $null
+    $saved   = Join-Path $PSScriptRoot 'sync-location.txt'
+    if (Test-Path $saved) { $suggest = (Get-Content $saved -Raw).Trim() }
+    if (-not $suggest) { $suggest = $env:OneDrive }
     if (-not $suggest) { $suggest = $env:OneDriveConsumer }
-    if ($suggest) { $suggest = Join-Path $suggest 'minecraft' }
     Write-Host ''
     Write-Host 'Shared location both computers can see (USB drive, network share, or'
     Write-Host 'a cloud-synced folder like OneDrive). Examples: E:\   \\NAS\minecraft'

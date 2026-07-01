@@ -11,6 +11,23 @@ Two setups are referenced throughout, kept in separate game directories so their
 | **Maps + Waypoints** | 26.1.2 | `.minecraft` | Main world — Xaero's Minimap + World Map, coords, waypoints |
 | **AI companion** | 1.21.1 | `.minecraft-ai` | AI NPC experiments (+ the same Xaero maps) |
 
+## Setup on a new computer
+
+`setup.ps1` installs all the backup/restore/sync scripts into `%APPDATA%\.minecraft\backups\`,
+registers the 15-minute auto-backup Scheduled Task, and remembers a shared folder so moving
+worlds between machines is one-click. Two ways to run it:
+
+- **From a clone:** double-click `Setup-Minecraft-Utilities.bat` (or run `.\setup.ps1`).
+- **On a fresh PC with no clone** — one line in PowerShell downloads everything from GitHub:
+  ```powershell
+  iwr https://raw.githubusercontent.com/ehalsey/minecraft-stuff/main/setup.ps1 -OutFile "$env:TEMP\mc-setup.ps1"; & "$env:TEMP\mc-setup.ps1"
+  ```
+
+Then on the machine you played on run `Sync-Minecraft-Backups.bat` → **Push**, and on the other
+machine run it → **Pull** (it defaults to the folder setup remembered). Flags: `setup.ps1 -NoTask`
+skips the scheduled task, `-SyncLocation <path>` presets the shared folder, `-NoPrompt` runs it
+non-interactively.
+
 ## What's here
 
 ### `backups/` — world backup & restore (Windows / PowerShell)
