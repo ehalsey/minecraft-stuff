@@ -7,6 +7,9 @@
 # RUNNING (an active session) OR a world changed since its last backup. The "changed" case is
 # what captures the final save written when you quit, so your last session is never lost. When
 # Minecraft is closed and nothing has changed, this exits immediately and creates nothing.
+#
+# -Force makes a restore point even when nothing changed (handy for an on-demand "back up now").
+param([switch]$Force)
 $ErrorActionPreference = 'Stop'
 
 $backupRoot = Join-Path $env:APPDATA '.minecraft\backups'
@@ -35,7 +38,7 @@ foreach ($s in $sources) {
         Measure-Object -Property LastWriteTime -Maximum).Maximum
     $lastBackup = Get-ChildItem -Path $s.Dest -Filter 'world_*.zip' -ErrorAction SilentlyContinue |
         Sort-Object LastWriteTime -Descending | Select-Object -First 1
-    if ($lastBackup -and $latestChange -and $lastBackup.LastWriteTime -ge $latestChange) {
+    if (-not $Force -and $lastBackup -and $latestChange -and $lastBackup.LastWriteTime -ge $latestChange) {
         $state = if ($mcRunning) { 'playing, but no new changes' } else { 'Minecraft closed and idle' }
         Write-Host "[$($s.Name)] $state since $($lastBackup.Name) - skipping."
         continue
