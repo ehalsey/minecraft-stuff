@@ -13,6 +13,8 @@ Two setups are referenced throughout, kept in separate game directories so their
 
 ## Setup on a new computer
 
+**New here? See the [full Setup & Usage Guide](SETUP.md)** for step-by-step instructions.
+
 `setup.ps1` installs all the backup/restore/sync scripts into `%APPDATA%\.minecraft\backups\`,
 registers the 15-minute auto-backup Scheduled Task, and remembers a shared folder so moving
 worlds between machines is one-click. Two ways to run it:
