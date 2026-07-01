@@ -61,6 +61,18 @@ On the **other** PC:
 Sync is **additive** (never deletes anything on either side) and keeps the `#IDs` consistent
 across machines.
 
+### One-click "other computer" (OneDrive users)
+
+If you sync through OneDrive, there's a shortcut for setting up a brand-new PC in one step.
+After your first Push, copy `pull-setup.ps1` and `Setup-And-Pull.bat` into your OneDrive
+`minecraft-world-backups\` folder. Then on the other PC (signed into the same OneDrive),
+just **double-click `Setup-And-Pull.bat`** — it installs the tools, registers the auto-backup
+task, and pulls your worlds in one go. Equivalent one-liner in PowerShell:
+
+```powershell
+iwr https://raw.githubusercontent.com/ehalsey/minecraft-stuff/main/setup.ps1 -OutFile "$env:TEMP\mc-setup.ps1"; & "$env:TEMP\mc-setup.ps1" -SyncLocation $env:OneDrive -NoPrompt; & "$env:APPDATA\.minecraft\backups\sync-backups.ps1" -Mode Pull -Location $env:OneDrive
+```
+
 ## Good to know
 
 - **Keep the repo public** — the one-line fresh-PC installer downloads over anonymous
