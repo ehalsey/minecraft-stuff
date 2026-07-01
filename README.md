@@ -19,9 +19,17 @@ Dual-world backup/restore covering both installs (main = 26.1.2, ai = 1.21.1).
   (skips `session.lock`, robocopy staging, keeps the last 40). Only does work when Minecraft
   is running *or* a world changed since its last backup, so idle ticks create nothing and the
   final save written on quit is still captured. Driven by a 15-minute Scheduled Task.
-- **`restore-world.ps1`** — interactive restore: pick a world set + restore point; snapshots
-  the current state first as a safety net. **Close Minecraft before restoring.**
-- **`*.bat`** — double-click launchers for the two scripts.
+- **`restore-world.ps1`** — interactive restore: pick a world set + restore point (each has a
+  stable `#ID` you can type, e.g. `47`); snapshots the current state first as a safety net.
+  **Close Minecraft before restoring.**
+- **`sync-backups.ps1`** — carry restore points between computers so you can pick up where you
+  left off on another PC. **Push** copies this machine's backups to a shared location (USB drive,
+  network share, or a cloud-synced folder like OneDrive); **Pull** brings them onto the other
+  machine (and can launch a restore). Copies are additive — nothing is deleted — and each world's
+  ID counter is reconciled to the highest seen, so the stable `#IDs` stay monotonic across
+  machines. Note: IDs are assigned per machine, so if two computers both create backups
+  independently their `#IDs` can collide (the timestamp still disambiguates).
+- **`*.bat`** — double-click launchers for the scripts.
 
 ### `docs/` — references & write-ups
 - **[Minecraft-Ore-Levels-26.1.2.md](docs/Minecraft-Ore-Levels-26.1.2.md)** — best Y-levels
