@@ -58,7 +58,10 @@ On the **other** PC:
    **restore** right away (close Minecraft first).
 3. Launch that profile — your world is exactly where you left it.
 
-Sync is **additive** (never deletes anything on either side) and keeps the `#IDs` consistent
+By default sync moves only the **newest 3 restore points per world** — all you need to
+continue elsewhere, and light on cloud/disk. Add `-Count N` to move more or `-All` for the
+full history. Sync is **additive** (never deletes anything on either side, so the shared
+folder still builds up a sparse offsite history over time) and keeps the `#IDs` consistent
 across machines.
 
 ### One-click "other computer" (OneDrive users)

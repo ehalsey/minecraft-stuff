@@ -44,10 +44,13 @@ Dual-world backup/restore covering both installs (main = 26.1.2, ai = 1.21.1).
 - **`sync-backups.ps1`** — carry restore points between computers so you can pick up where you
   left off on another PC. **Push** copies this machine's backups to a shared location (USB drive,
   network share, or a cloud-synced folder like OneDrive); **Pull** brings them onto the other
-  machine (and can launch a restore). Copies are additive — nothing is deleted — and each world's
-  ID counter is reconciled to the highest seen, so the stable `#IDs` stay monotonic across
-  machines. Note: IDs are assigned per machine, so if two computers both create backups
-  independently their `#IDs` can collide (the timestamp still disambiguates).
+  machine (and can launch a restore). By default only the **newest 3 per world** are moved —
+  enough to continue elsewhere and cheap on cloud/disk; use `-Count N` to change how many or
+  `-All` for the full history. Copies are additive — nothing is deleted, so the shared store
+  still accumulates a sparse offsite history — and each world's ID counter is reconciled to the
+  highest seen, so the stable `#IDs` stay monotonic across machines. Note: IDs are assigned per
+  machine, so if two computers both create backups independently their `#IDs` can collide (the
+  timestamp still disambiguates).
 - **`*.bat`** — double-click launchers for the scripts.
 
 ### `docs/` — references & write-ups
