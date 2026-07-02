@@ -10,17 +10,23 @@
 #   Push : this computer's backups  ->  shared location   (do this where you played)
 #   Pull : shared location -> this computer's backups      (do this on the other PC)
 #
-# Copies are ADDITIVE — nothing is ever deleted on either side. After copying, each
-# world's counter.txt is reconciled to the highest ID seen, so the stable #IDs stay
-# monotonic across machines.
+# By default only the NEWEST few restore points per world are moved — that's all you need
+# to continue on another PC, and it keeps transfers small. Use -Count N to change how many,
+# or -All to sync the full history. Copies are ADDITIVE — nothing is ever deleted on either
+# side, so the shared store still accumulates a sparse offsite history over time. After
+# copying, each world's counter.txt is reconciled to the highest ID seen, so the stable
+# #IDs stay monotonic across machines.
 #
 # Examples:
 #   .\sync-backups.ps1                              # interactive (pick mode + location)
-#   .\sync-backups.ps1 -Mode Push -Location E:\
-#   .\sync-backups.ps1 -Mode Pull -Location \\NAS\minecraft -Restore
+#   .\sync-backups.ps1 -Mode Push -Location E:\     # newest 3 per world
+#   .\sync-backups.ps1 -Mode Push -Location E:\ -Count 5
+#   .\sync-backups.ps1 -Mode Pull -Location \\NAS\minecraft -All -Restore
 param(
     [ValidateSet('Push', 'Pull')][string]$Mode,
     [string]$Location,
+    [int]$Count = 3,
+    [switch]$All,
     [switch]$Restore
 )
 $ErrorActionPreference = 'Stop'
@@ -83,8 +89,9 @@ function Update-Counter($dir) {
     Set-Content -Path $counterFile -Value ([Math]::Max([int]$maxFile, $cur))
 }
 
+$scope = if ($All) { 'all restore points' } else { "newest $Count per world" }
 Write-Host ''
-Write-Host "$Mode  (shared store: $store)" -ForegroundColor Cyan
+Write-Host "$Mode  ($scope -> shared store: $store)" -ForegroundColor Cyan
 
 $copied = $false
 foreach ($w in $worlds) {
@@ -93,24 +100,28 @@ foreach ($w in $worlds) {
     if ($Mode -eq 'Push') { $src = $local;  $dst = $shared }
     else                  { $src = $shared; $dst = $local  }
 
-    if (-not (Test-Path $src) -or
-        -not (Get-ChildItem -Path $src -Filter 'world_*.zip' -ErrorAction SilentlyContinue)) {
+    $available = Get-ChildItem -Path $src -Filter 'world_*.zip' -ErrorAction SilentlyContinue |
+        Sort-Object LastWriteTime -Descending
+    if (-not $available) {
         Write-Host "[$w] no restore points to copy from $src - skipping."
         continue
     }
     New-Item -ItemType Directory -Force -Path $dst | Out-Null
 
-    # Additive copy (no /MIR, no /PURGE): never deletes on either side. counter.txt is
-    # excluded and reconciled explicitly below so a stale counter can't roll IDs back.
-    robocopy $src $dst /E /XF counter.txt /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null
-    if ($LASTEXITCODE -ge 8) {
-        Write-Host "[$w] robocopy reported a problem (exit $LASTEXITCODE)." -ForegroundColor Red
-        continue
+    # Pick the newest N (or everything with -All).
+    $pick = if ($All) { $available } else { $available | Select-Object -First $Count }
+
+    # Additive copy: only bring over ones the destination doesn't already have; never delete.
+    # counter.txt is not copied — it's reconciled below so a stale counter can't roll IDs back.
+    $new = 0
+    foreach ($f in $pick) {
+        $target = Join-Path $dst $f.Name
+        if (-not (Test-Path $target)) { Copy-Item -Path $f.FullName -Destination $target -Force; $new++ }
     }
     Update-Counter $dst
     $copied = $true
-    $n = (Get-ChildItem -Path $dst -Filter 'world_*.zip').Count
-    Write-Host "[$w] $Mode complete - restore points at destination: $n" -ForegroundColor Green
+    $total = (Get-ChildItem -Path $dst -Filter 'world_*.zip').Count
+    Write-Host "[$w] $Mode complete - $new new copied, $total total at destination." -ForegroundColor Green
 }
 
 if (-not $copied) {
